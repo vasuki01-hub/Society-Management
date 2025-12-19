@@ -464,7 +464,7 @@
                     </div>
                 </div>
                 <div>
-                    <h3 data-lang="overall_collection">Overall Collection</h3>
+                    <h3 data-lang="Total_Balance_Used">Total Balance Used</h3>
                     <div class="chart-container">
                         <canvas id="overallProgressChart"></canvas>
                         <div class="chart-text" id="overallProgressText">0%</div>
@@ -516,7 +516,7 @@
                 monthly_report: "Monthly Report",
                 select_month_year: "Select Month & Year:",
                 expenses_vs_collected: "Expenses vs Collected",
-                overall_collection: "Overall Collection",
+                Total_Balance_Used: "Total Balance Used",
                 balance_status: "Balance Status",
                 flat_wise_progress: "Flat-wise Collection Progress",
                 expense_breakdown: "Expense Breakdown by Category",
@@ -555,7 +555,7 @@
                 Reports: "रिपोर्ट",
                 select_month_year: "माह और वर्ष चुनें:",
                 expenses_vs_collected: "खर्च बनाम एकत्रित",
-                overall_collection: "कुल संग्रह",
+                Total_Balance_Used: "कुल प्रयुक्त शेष राशि",
                 balance_status: "शेष स्थिति",
                 flat_wise_progress: "फ्लैट अनुसार संग्रह प्रगति",
                 expense_breakdown: "श्रेणी अनुसार खर्च विभाजन",
@@ -594,7 +594,7 @@
                 monthly_report: "માસિક અહેવાલ",
                 select_month_year: "મહિનો અને વર્ષ પસંદ કરો:",
                 expenses_vs_collected: "ખર્ચ વિરુદ્ધ એકત્રિત",
-                overall_collection: "કુલ સંગ્રહ",
+                Total_Balance_Used: "કુલ સંતુલન વપરાય છે",
                 balance_status: "બેલેન્સ સ્થિતિ",
                 flat_wise_progress: "ફ્લેટ પ્રમાણે સંગ્રહ પ્રગતિ",
                 expense_breakdown: "શ્રેણી પ્રમાણે ખર્ચ વિભાજન",
@@ -963,7 +963,7 @@
             document.getElementById('expensesText').textContent = formatIndianRupees(monthlyExp) + ' / ' + formatIndianRupees(monthlyPay);
             document.getElementById('balanceText').textContent = formatIndianRupees(monthlyBal);
 
-            const overallPercent = monthlyExp > 0 ? (monthlyPay / monthlyExp) * 100 : 0;
+            const overallPercent = monthlyExp > 0 ? (monthlyExp/monthlyPay) * 100 : 0;
             document.getElementById('overallProgressText').textContent = `${overallPercent.toFixed(0)}%`;
 
             if (expensesChart) expensesChart.destroy();
