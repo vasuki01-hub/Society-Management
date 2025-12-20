@@ -52,7 +52,7 @@
             font-family: Arial, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
-            line-height: 1.6;
+            line-height: 1.4;
         }
         .container { 
             max-width: 1200px; 
@@ -92,14 +92,31 @@
             background: var(--container-bg);
             color: var(--text);
         }
-        h2 {padding-left: 7px; border-radius: 100px; background: bisque; margin: 30px 0 15px; color: var(--heading); border-bottom: 2px solid var(--border); padding-bottom: 8px; }
-        h3.month-heading, h3.floor-heading {
-            background: #3498db;
+        h2 {padding-left: 7px; border-radius: 100px; background: bisque; margin: 30px 0 15px; color: #000000; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+        
+        /* Month heading in View Details - Orange */
+        h3.month-heading {
+            background: #e67e22;
             color: white;
-            padding: 10px;
+            padding: 12px 18px;
             border-radius: 50px;
-            margin: 30px -18px 15px 0;
-            font-size: 1.3em;
+            margin: 35px 0 20px 0;
+            font-size: 1.4em;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Floor heading in View Details - Green */
+        h3.floor-heading {
+            background: #27ae60;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 30px;
+            margin: 25px 0 15px 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: inline-block;
         }
 
         .dashboard .stats { 
@@ -148,7 +165,7 @@
             padding: 12px; 
             border: 1px solid var(--input-border); 
             border-radius: 5px; 
-            font-size: 1em;
+            font-size: 0.7rem;
             background: var(--container-bg);
             color: var(--text);
         }
@@ -346,7 +363,7 @@
                     </select>
                 </div>
                 <div class="theme-toggle">
-                    <button onclick="toggleTheme()">🌙 Dark Mode</button>
+                    <button onclick="toggleTheme()">Dark Mode</button>
                 </div>
             </div>
         </header>
@@ -483,7 +500,7 @@
             <h2><span data-lang="expenses">Expenses</span> - <span id="list-month-title">All Time</span></h2>
             <div id="expenses-container"></div>
 
-            <h2><span data-lang="Maintenance_By_Floor">Maintenance by Floor</span> - <span id="list-month-title2">All Time</span></h2>
+            <h2><span data-lang="Maintenance_By_Floor">Maintenance By Floor</span> - <span id="list-month-title2">All Time</span></h2>
             <div id="floor-payments-container"></div>
         </section>
     </div>
@@ -660,10 +677,10 @@
             document.body.classList.toggle('dark-mode');
             const button = document.querySelector('.theme-toggle button');
             if (document.body.classList.contains('dark-mode')) {
-                button.textContent = '☀️ Light Mode';
+                button.textContent = 'Light Mode';
                 localStorage.setItem('theme', 'dark');
             } else {
-                button.textContent = '🌙 Dark Mode';
+                button.textContent = 'Dark Mode';
                 localStorage.setItem('theme', 'light');
             }
         }
@@ -676,7 +693,7 @@
             const savedTheme = localStorage.getItem('theme') || 'light';
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark-mode');
-                document.querySelector('.theme-toggle button').textContent = '☀️ Light Mode';
+                document.querySelector('.theme-toggle button').textContent = 'Light Mode';
             }
 
             populateMonthSelects();
@@ -982,55 +999,136 @@
             const container = document.getElementById('floor-payments-container');
             container.innerHTML = '';
 
-            floors.forEach(floor => {
-                const floorFlats = allFlats.filter(f => floorMap[f] === floor);
-                const floorSection = document.createElement('div');
-                const heading = document.createElement('h3');
-                heading.className = 'floor-heading';
-                heading.textContent = floor;
-                floorSection.appendChild(heading);
-
-                const table = document.createElement('table');
-                table.innerHTML = `
-                    <thead>
-                        <tr><th>Date</th><th>Flat No.</th><th>Occupancy</th><th>Member Name</th><th>Contact No.</th><th>Amount</th><th>Actions</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                `;
-                const tbody = table.querySelector('tbody');
-
-                floorFlats.forEach(flat => {
-                    const flatPayments = pay.filter(p => p.flat === flat);
-                    const latestPayment = flatPayments.length > 0 ? flatPayments[flatPayments.length - 1] : null;
-
-                    const status = flatStatus[flat] || (latestPayment && latestPayment.name ? 'occupied' : 'vacant');
-                    const statusClass = status === 'occupied' ? 'occupied' : 'vacant';
-                    const statusText = status === 'occupied' ? translations[lang].occupied : translations[lang].vacant;
-
-                    const contact = latestPayment && latestPayment.contact ? latestPayment.contact : '—';
-
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${latestPayment ? latestPayment.date : '—'}</td>
-                        <td>${flat}</td>
-                        <td>
-                            <span class="occupancy-status ${statusClass}">${statusText}</span>
-                            <button class="action-btn" onclick="toggleOccupancy('${flat}')">${translations[lang].toggle}</button>
-                        </td>
-                        <td>${latestPayment ? latestPayment.name || '—' : '—'}</td>
-                        <td>${contact}</td>
-                        <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : formatIndianRupees(0)}</td>
-                        <td>
-                            ${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button>
-                            <button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}
-                        </td>
-                    `;
-                    tbody.appendChild(row);
+            // When "All Time" is selected → group by month
+            if (monthKey === 'all') {
+                const paymentsByMonth = {};
+                payments.forEach(p => {
+                    const date = new Date(p.date);
+                    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    if (!paymentsByMonth[key]) paymentsByMonth[key] = [];
+                    paymentsByMonth[key].push(p);
                 });
 
-                floorSection.appendChild(table);
-                container.appendChild(floorSection);
-            });
+                const sortedMonthKeys = Object.keys(paymentsByMonth).sort().reverse();
+
+                if (sortedMonthKeys.length === 0) {
+                    container.innerHTML = '<div class="no-data">No payments recorded yet.</div>';
+                } else {
+                    sortedMonthKeys.forEach(key => {
+                        const monthPayments = paymentsByMonth[key];
+                        const monthName = new Date(key + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+
+                        const monthSection = document.createElement('div');
+                        const monthHeading = document.createElement('h3');
+                        monthHeading.className = 'month-heading';
+                        monthHeading.textContent = monthName;
+                        monthSection.appendChild(monthHeading);
+
+                        floors.forEach(floor => {
+                            const floorFlats = allFlats.filter(f => floorMap[f] === floor);
+                            const floorSection = document.createElement('div');
+                            const floorHeading = document.createElement('h3');
+                            floorHeading.className = 'floor-heading';
+                            floorHeading.textContent = floor;
+                            floorSection.appendChild(floorHeading);
+
+                            const table = document.createElement('table');
+                            table.innerHTML = `
+                                <thead>
+                                    <tr><th>Date</th><th>Flat No.</th><th>Occupancy</th><th>Member Name</th><th>Contact No.</th><th>Amount</th><th>Actions</th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            `;
+                            const tbody = table.querySelector('tbody');
+
+                            floorFlats.forEach(flat => {
+                                const flatPaymentsInMonth = monthPayments.filter(p => p.flat === flat);
+                                const latestPayment = flatPaymentsInMonth.length > 0 ? flatPaymentsInMonth[flatPaymentsInMonth.length - 1] : null;
+
+                                const status = flatStatus[flat] || (latestPayment && latestPayment.name ? 'occupied' : 'vacant');
+                                const statusClass = status === 'occupied' ? 'occupied' : 'vacant';
+                                const statusText = status === 'occupied' ? translations[lang].occupied : translations[lang].vacant;
+
+                                const contact = latestPayment && latestPayment.contact ? latestPayment.contact : '—';
+
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${latestPayment ? latestPayment.date : '—'}</td>
+                                    <td>${flat}</td>
+                                    <td>
+                                        <span class="occupancy-status ${statusClass}">${statusText}</span>
+                                        <button class="action-btn" onclick="toggleOccupancy('${flat}')">${translations[lang].toggle}</button>
+                                    </td>
+                                    <td>${latestPayment ? latestPayment.name || '—' : '—'}</td>
+                                    <td>${contact}</td>
+                                    <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : formatIndianRupees(0)}</td>
+                                    <td>
+                                        ${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button>
+                                        <button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+
+                            floorSection.appendChild(table);
+                            monthSection.appendChild(floorSection);
+                        });
+
+                        container.appendChild(monthSection);
+                    });
+                }
+            } else {
+                // Specific month selected
+                floors.forEach(floor => {
+                    const floorFlats = allFlats.filter(f => floorMap[f] === floor);
+                    const floorSection = document.createElement('div');
+                    const heading = document.createElement('h3');
+                    heading.className = 'floor-heading';
+                    heading.textContent = floor;
+                    floorSection.appendChild(heading);
+
+                    const table = document.createElement('table');
+                    table.innerHTML = `
+                        <thead>
+                            <tr><th>Date</th><th>Flat No.</th><th>Occupancy</th><th>Member Name</th><th>Contact No.</th><th>Amount</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    `;
+                    const tbody = table.querySelector('tbody');
+
+                    floorFlats.forEach(flat => {
+                        const flatPayments = pay.filter(p => p.flat === flat);
+                        const latestPayment = flatPayments.length > 0 ? flatPayments[flatPayments.length - 1] : null;
+
+                        const status = flatStatus[flat] || (latestPayment && latestPayment.name ? 'occupied' : 'vacant');
+                        const statusClass = status === 'occupied' ? 'occupied' : 'vacant';
+                        const statusText = status === 'occupied' ? translations[lang].occupied : translations[lang].vacant;
+
+                        const contact = latestPayment && latestPayment.contact ? latestPayment.contact : '—';
+
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${latestPayment ? latestPayment.date : '—'}</td>
+                            <td>${flat}</td>
+                            <td>
+                                <span class="occupancy-status ${statusClass}">${statusText}</span>
+                                <button class="action-btn" onclick="toggleOccupancy('${flat}')">${translations[lang].toggle}</button>
+                            </td>
+                            <td>${latestPayment ? latestPayment.name || '—' : '—'}</td>
+                            <td>${contact}</td>
+                            <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : formatIndianRupees(0)}</td>
+                            <td>
+                                ${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button>
+                                <button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    floorSection.appendChild(table);
+                    container.appendChild(floorSection);
+                });
+            }
 
             document.querySelectorAll('[data-payment-idx]').forEach(btn => {
                 const idx = parseInt(btn.getAttribute('data-payment-idx'));
@@ -1317,7 +1415,6 @@
             </select>`;
             cells[3].innerHTML = `<input type="number" class="editable-input" step="0.01" value="${original.amount}">`;
 
-            // Photos cell
             let photosHtml = '<div>';
             if (original.photos && original.photos.length > 0) {
                 original.photos.forEach((photo, i) => {
@@ -1341,7 +1438,6 @@
                 const newCategory = cells[2].querySelector('select').value;
                 const newAmount = cells[3].querySelector('input').value;
 
-                // Handle photos
                 let keptPhotos = [];
                 if (original.photos) {
                     for (let i = 0; i < original.photos.length; i++) {
