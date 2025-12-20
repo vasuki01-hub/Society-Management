@@ -47,8 +47,8 @@
         }
 
         * { box-sizing: border-box; margin: 3px; padding: 0; transition: background 0.3s, color 0.3s; }
-        body { 
-            font-size: small;   
+        body {
+            font-size: x-small;   
             font-family: Arial, sans-serif; 
             background: var(--bg); 
             color: var(--text); 
@@ -82,8 +82,6 @@
             color: var(--text);
         }
 
-
-        
         .theme-toggle button {
             cursor: pointer;
             background: #ffffff;
@@ -94,13 +92,13 @@
             background: var(--container-bg);
             color: var(--text);
         }
-        h2 { margin: 30px 0 15px; color: var(--heading); border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+        h2 {padding-left: 7px; border-radius: 100px; background: bisque; margin: 30px 0 15px; color: var(--heading); border-bottom: 2px solid var(--border); padding-bottom: 8px; }
         h3.month-heading, h3.floor-heading {
             background: #3498db;
             color: white;
             padding: 10px;
             border-radius: 50px;
-            margin: 30px 0 15px 0;
+            margin: 30px -18px 15px 0;
             font-size: 1.3em;
         }
 
@@ -155,7 +153,7 @@
             color: var(--text);
         }
         button { background: #09c510; color: white; cursor: pointer; }
-        button:hover { background:  rgb(58, 57, 56) ; }
+        button:hover { background: rgb(58, 57, 56); }
 
         .filter { 
             margin: 20px 0; 
@@ -222,6 +220,7 @@
         .save-btn { background: #27ae60; color: white; }
         .cancel-btn { background: #95a5a6; color: white; }
         .delete-btn { background: #e74c3c; color: white; }
+        .photo-btn { background: #3498db; color: white; }
 
         .editable-input {
             padding: 8px;
@@ -371,78 +370,14 @@
         </section>
 
         <section class="tabs">
-            <button class="tab-btn active" onclick="openTab('expenses')" data-lang="add_expense">Add Expense</button>
+            <button class="tab-btn active" onclick="openTab('dashboard')" data-lang="Dashboard">Dashboard</button>
+            <button class="tab-btn" onclick="openTab('expenses')" data-lang="add_expense">Add Expense</button>
             <button class="tab-btn" onclick="openTab('payments')" data-lang="Add_Maintenance">Add Maintenance</button>
             <button class="tab-btn" onclick="openTab('lists')" data-lang="view_details">View Details</button>
-            <button class="tab-btn" onclick="openTab('reports')" data-lang="Reports">Reports</button>
         </section>
 
-        <!-- Add Expense -->
-        <section id="expenses" class="tab-content">
-            <h2 data-lang="add_society_expense">Add Society Expense</h2>
-            <form id="expense-form">
-                <input type="date" id="exp-date" required>
-                <input type="text" id="exp-desc" placeholder="Description" data-lang-placeholder="description_placeholder">
-                <select id="exp-category" required>
-                    <option value="" disabled selected data-lang="select_category">Select Category</option>
-                    <option>Utilities</option>
-                    <option>Repairs</option>
-                    <option>Security</option>
-                    <option>Cleaning</option>
-                    <option>Staff Salary</option>
-                    <option>Events</option>
-                    <option>Other</option>
-                </select>
-                <input type="number" id="exp-amount" placeholder="Amount (₹)" data-lang-placeholder="amount_placeholder">
-                <button type="submit" data-lang="add_expense_btn">Add Expense</button>
-            </form>
-        </section>
-
-        <!-- Add Payment -->
-        <section id="payments" class="tab-content" style="display:none;">
-            <h2 data-lang="add_maintenance_payment">Add Maintenance Payment</h2>
-            <form id="payment-form">
-                <select id="pay-flat" required>
-                    <option value="" disabled selected data-lang="select_flat">Select Flat No.</option>
-                    <optgroup label="1st Floor">
-                        <option>109</option><option>110</option><option>111</option><option>112</option>
-                    </optgroup>
-                    <optgroup label="2nd Floor">
-                        <option>209</option><option>210</option><option>211</option><option>212</option>
-                    </optgroup>
-                    <optgroup label="3rd Floor">
-                        <option>309</option><option>310</option><option>311</option><option>312</option>
-                    </optgroup>
-                    <optgroup label="4th Floor">
-                        <option>409</option><option>410</option><option>411</option><option>412</option>
-                    </optgroup>
-                </select>
-                <input type="text" id="pay-name" placeholder="Member Name (leave blank if vacant)" data-lang-placeholder="member_name_placeholder">
-                <div style="grid-column: span 2; margin: 10px 0;">
-                    <label><input type="checkbox" id="pay-vacant" onchange="toggleVacant()"> <span data-lang="mark_vacant">Mark as Vacant (no owner name)</span></label>
-                </div>
-                <input type="date" id="pay-date" required>
-                <input type="number" id="pay-amount" placeholder="Amount Paid (₹)" data-lang-placeholder="amount_paid_placeholder">
-                <button type="submit" data-lang="add_payment_btn">Add Maintenance</button>
-            </form>
-        </section>
-
-        <!-- View Details -->
-        <section id="lists" class="tab-content" style="display:none;">
-            <div class="filter">
-                <label for="list-month" data-lang="view_month">View Month:</label>
-                <select id="list-month" onchange="renderLists()"></select>
-            </div>
-
-            <h2><span data-lang="expenses">Expenses</span> - <span id="list-month-title">All Time</span></h2>
-            <div id="expenses-container"></div>
-
-            <h2><span data-lang="payments_by_floor">Payments by Floor</span> - <span id="list-month-title2">All Time</span></h2>
-            <div id="floor-payments-container"></div>
-        </section>
-
-        <!-- Reports -->
-        <section id="reports" class="tab-content" style="display:none;">
+        <!-- Dashboard (formerly Reports) -->
+        <section id="dashboard" class="tab-content">
             <div class="filter">
                 <div>
                     <label for="report-month" data-lang="select_month_year">Select Month & Year:</label>
@@ -454,7 +389,7 @@
                 </div>
             </div>
 
-            <h2><span data-lang="monthly_report">Reports</span> - <span id="report-month-title">Current Month</span></h2>
+            <h2><span data-lang="monthly_report">Dashboard</span> - <span id="report-month-title">Current Month</span></h2>
             <div class="report-summary">
                 <div>
                     <h3 data-lang="expenses_vs_collected">Expenses vs Collected</h3>
@@ -485,6 +420,72 @@
             <h2 style="margin-top:40px;" data-lang="expense_breakdown">Expense Breakdown by Category</h2>
             <div class="category-breakdown" id="category-breakdown"></div>
         </section>
+
+        <!-- Add Expense -->
+        <section id="expenses" class="tab-content" style="display:none;">
+            <h2 data-lang="add_society_expense">Add Society Expense</h2>
+            <form id="expense-form">
+                <input type="date" id="exp-date" required>
+                <input type="text" id="exp-desc" placeholder="Description" data-lang-placeholder="description_placeholder">
+                <select id="exp-category" required>
+                    <option value="" disabled selected data-lang="select_category">Select Category</option>
+                    <option>Utilities</option>
+                    <option>Repairs</option>
+                    <option>Security</option>
+                    <option>Cleaning</option>
+                    <option>Staff Salary</option>
+                    <option>Events</option>
+                    <option>Other</option>
+                </select>
+                <input type="number" id="exp-amount" placeholder="Amount (₹)" data-lang-placeholder="amount_placeholder">
+                <input type="file" id="exp-photo" accept="image/*" multiple>
+                <button type="submit" data-lang="add_expense_btn">Add Expense</button>
+            </form>
+        </section>
+
+        <!-- Add Payment (Maintenance) -->
+        <section id="payments" class="tab-content" style="display:none;">
+            <h2 data-lang="add_maintenance_payment">Add Maintenance Payment</h2>
+            <form id="payment-form">
+                <select id="pay-flat" required>
+                    <option value="" disabled selected data-lang="select_flat">Select Flat No.</option>
+                    <optgroup label="1st Floor">
+                        <option>109</option><option>110</option><option>111</option><option>112</option>
+                    </optgroup>
+                    <optgroup label="2nd Floor">
+                        <option>209</option><option>210</option><option>211</option><option>212</option>
+                    </optgroup>
+                    <optgroup label="3rd Floor">
+                        <option>309</option><option>310</option><option>311</option><option>312</option>
+                    </optgroup>
+                    <optgroup label="4th Floor">
+                        <option>409</option><option>410</option><option>411</option><option>412</option>
+                    </optgroup>
+                </select>
+                <input type="text" id="pay-name" placeholder="Member Name (leave blank if vacant)" data-lang-placeholder="member_name_placeholder">
+                <input type="text" id="pay-contact" placeholder="Contact No. (optional)" data-lang-placeholder="contact_no_placeholder">
+                <div style="grid-column: span 2; margin: 10px 0;">
+                    <label><input type="checkbox" id="pay-vacant" onchange="toggleVacant()"> <span data-lang="mark_vacant">Mark as Vacant (no owner name)</span></label>
+                </div>
+                <input type="date" id="pay-date" required>
+                <input type="number" id="pay-amount" placeholder="Amount Paid (₹)" data-lang-placeholder="amount_paid_placeholder">
+                <button type="submit" data-lang="add_payment_btn">Add Maintenance</button>
+            </form>
+        </section>
+
+        <!-- View Details -->
+        <section id="lists" class="tab-content" style="display:none;">
+            <div class="filter">
+                <label for="list-month" data-lang="view_month">View Month:</label>
+                <select id="list-month" onchange="renderLists()"></select>
+            </div>
+
+            <h2><span data-lang="expenses">Expenses</span> - <span id="list-month-title">All Time</span></h2>
+            <div id="expenses-container"></div>
+
+            <h2><span data-lang="Maintenance_By_Floor">Maintenance by Floor</span> - <span id="list-month-title2">All Time</span></h2>
+            <div id="floor-payments-container"></div>
+        </section>
     </div>
 
     <script>
@@ -498,7 +499,7 @@
                 add_expense: "Add Expense",
                 Add_Maintenance: "Add Maintenance",
                 view_details: "View Details",
-                monthly_reports: "Monthly Reports",
+                Dashboard: "Dashboard",
                 add_society_expense: "Add Society Expense",
                 description_placeholder: "Description",
                 select_category: "Select Category",
@@ -507,13 +508,14 @@
                 add_maintenance_payment: "Add Maintenance Payment",
                 select_flat: "Select Flat No.",
                 member_name_placeholder: "Member Name (leave blank if vacant)",
+                contact_no_placeholder: "Contact No. (optional)",
                 mark_vacant: "Mark as Vacant (no owner name)",
                 amount_paid_placeholder: "Amount Paid (₹)",
                 add_payment_btn: "Add Payment",
                 view_month: "View Month:",
                 expenses: "Expenses",
-                payments_by_floor: "Payments by Floor",
-                monthly_report: "Monthly Report",
+                Maintenance_By_Floor: "Maintenance By Floor",
+                monthly_report: "Dashboard",
                 select_month_year: "Select Month & Year:",
                 expenses_vs_collected: "Expenses vs Collected",
                 Total_Balance_Used: "Total Balance Used",
@@ -526,7 +528,11 @@
                 Download_Expense_Report_PDF: "Download Expense Report PDF",
                 Download_Maintenance_Report_PDF: "Download Maintenance Report PDF",
                 month_total: "Month Total: ",
-                all_time_total: "All Time Total Expenses: "
+                all_time_total: "All Time Total Expenses: ",
+                photos_col: "Photos",
+                view_photos: "View Photos",
+                no_photos: "No Photos",
+                delete_photo: "Delete Photo"
             },
             hi: {
                 title: "सोसायटी मेंटेनेंस और खर्च प्रबंधक",
@@ -537,7 +543,7 @@
                 add_expense: "खर्च जोड़ें",
                 Add_Maintenance: "रखरखाव जोड़ें",
                 view_details: "विवरण देखें",
-                monthly_reports: "मासिक रिपोर्ट",
+                Dashboard: "डैशबोर्ड",
                 add_society_expense: "सोसायटी खर्च जोड़ें",
                 description_placeholder: "विवरण",
                 select_category: "श्रेणी चुनें",
@@ -546,13 +552,14 @@
                 add_maintenance_payment: "मेंटेनेंस भुगतान जोड़ें",
                 select_flat: "फ्लैट नंबर चुनें",
                 member_name_placeholder: "सदस्य का नाम (खाली छोड़ें यदि रिक्त)",
+                contact_no_placeholder: "संपर्क नंबर (वैकल्पिक)",
                 mark_vacant: "रिक्त चिह्नित करें (कोई मालिक नाम नहीं)",
                 amount_paid_placeholder: "भुगतान की गई राशि (₹)",
                 add_payment_btn: "भुगतान जोड़ें",
                 view_month: "माह देखें:",
                 expenses: "खर्च",
-                payments_by_floor: "मंजिल अनुसार भुगतान",
-                Reports: "रिपोर्ट",
+                Maintenance_By_Floor: "फर्श द्वारा रखरखाव",
+                monthly_report: "डैशबोर्ड",
                 select_month_year: "माह और वर्ष चुनें:",
                 expenses_vs_collected: "खर्च बनाम एकत्रित",
                 Total_Balance_Used: "कुल प्रयुक्त शेष राशि",
@@ -565,7 +572,11 @@
                 Download_Expense_Report_PDF: "व्यय रिपोर्ट पीडीएफ डाउनलोड करें",
                 Download_Maintenance_Report_PDF: "रखरखाव रिपोर्ट पीडीएफ डाउनलोड करें",
                 month_total: "माह कुल: ",
-                all_time_total: "सभी समय कुल खर्च: "
+                all_time_total: "सभी समय कुल खर्च: ",
+                photos_col: "फोटो",
+                view_photos: "फोटो देखें",
+                no_photos: "कोई फोटो नहीं",
+                delete_photo: "फोटो हटाएं"
             },
             gu: {
                 title: "સોસાયટી મેઇન્ટેનન્સ અને ખર્ચ મેનેજર",
@@ -576,7 +587,7 @@
                 add_expense: "ખર્ચ ઉમેરો",
                 Add_Maintenance: "ઉમેરો_જાળ",
                 view_details: "વિગતો જુઓ",
-                Reports: "અહેવાલો",
+                Dashboard: "ડેશબોર્ડ",
                 add_society_expense: "સોસાયટી ખર્ચ ઉમેરો",
                 description_placeholder: "વર્ણન",
                 select_category: "શ્રેણી પસંદ કરો",
@@ -585,13 +596,14 @@
                 add_maintenance_payment: "મેઇન્ટેનન્સ ચુકવણી ઉમેરો",
                 select_flat: "ફ્લેટ નંબર પસંદ કરો",
                 member_name_placeholder: "સભ્યનું નામ (ખાલી છોડો જો ખાલી હોય)",
+                contact_no_placeholder: "સંપર્ક નંબર (વૈકલ્પિક)",
                 mark_vacant: "ખાલી તરીકે ચિહ્નિત કરો (કોઈ માલિકનું નામ નહીં)",
                 amount_paid_placeholder: "ચુકવેલ રકમ (₹)",
                 add_payment_btn: "ચુકવણી ઉમેરો",
                 view_month: "મહિનો જુઓ:",
                 expenses: "ખર્ચ",
-                payments_by_floor: "માળ પ્રમાણે ચુકવણીઓ",
-                monthly_report: "માસિક અહેવાલ",
+                Maintenance_By_Floor: "ફ્લોર દ્વારા જાળવણી",
+                monthly_report: "ડેશબોર્ડ",
                 select_month_year: "મહિનો અને વર્ષ પસંદ કરો:",
                 expenses_vs_collected: "ખર્ચ વિરુદ્ધ એકત્રિત",
                 Total_Balance_Used: "કુલ સંતુલન વપરાય છે",
@@ -604,7 +616,11 @@
                 Download_Expense_Report_PDF: "ડાઉનલોડ_એક્સપેન્સ_રેપોર્ટ_પીડીએફ",
                 Download_Maintenance_Report_PDF: "જાળવણી અહેવાલ પીડીએફ ડાઉનલોડ કરો",
                 month_total: "મહિનો કુલ: ",
-                all_time_total: "બધા સમય કુલ ખર્ચ: "
+                all_time_total: "બધા સમય કુલ ખર્ચ: ",
+                photos_col: "ફોટા",
+                view_photos: "ફોટો જુઓ",
+                no_photos: "કોઈ ફોટા નથી",
+                delete_photo: "ફોટો ડિલીટ કરો"
             }
         };
 
@@ -667,6 +683,9 @@
             updateDashboard();
             renderLists();
             renderReports();
+
+            // Default to Dashboard tab
+            openTab('dashboard');
         };
 
         let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
@@ -690,11 +709,15 @@
 
         function toggleVacant() {
             const nameInput = document.getElementById('pay-name');
+            const contactInput = document.getElementById('pay-contact');
             if (document.getElementById('pay-vacant').checked) {
                 nameInput.value = '';
+                contactInput.value = '';
                 nameInput.disabled = true;
+                contactInput.disabled = true;
             } else {
                 nameInput.disabled = false;
+                contactInput.disabled = false;
             }
         }
 
@@ -759,7 +782,76 @@
             document.getElementById('balance').style.color = balance >= 0 ? '#27ae60' : '#e74c3c';
         }
 
+        function viewPhotos(idx) {
+            const lang = document.getElementById('language-select').value;
+            const expense = expenses[idx];
+            if (!expense.photos || expense.photos.length === 0) return;
+
+            const modal = document.createElement('div');
+            modal.id = 'photo-modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+
+            const imgContainer = document.createElement('div');
+            imgContainer.style.cssText = `
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                max-width: 90%;
+                max-height: 90%;
+                overflow: auto;
+            `;
+
+            expense.photos.forEach((photo) => {
+                const imgWrapper = document.createElement('div');
+                imgWrapper.style.cssText = 'margin: 10px; text-align: center;';
+                const img = document.createElement('img');
+                img.src = photo;
+                img.style.cssText = `
+                    max-width: 300px;
+                    max-height: 300px;
+                    border: 1px solid white;
+                    border-radius: 5px;
+                `;
+                imgWrapper.appendChild(img);
+                imgContainer.appendChild(imgWrapper);
+            });
+
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = 'Close';
+            closeBtn.style.cssText = `
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: white;
+                color: black;
+                border: none;
+                padding: 10px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+            `;
+            closeBtn.onclick = () => {
+                document.body.removeChild(modal);
+            };
+
+            modal.appendChild(imgContainer);
+            modal.appendChild(closeBtn);
+            document.body.appendChild(modal);
+        }
+
         function renderLists() {
+            const lang = document.getElementById('language-select').value;
             const monthKey = document.getElementById('list-month').value || 'all';
             const { exp, pay } = getFilteredData(monthKey);
 
@@ -775,23 +867,25 @@
                 const table = document.createElement('table');
                 table.innerHTML = `
                     <thead>
-                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr>
+                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>${translations[lang].photos_col}</th><th>Actions</th></tr>
                     </thead>
                     <tbody></tbody>
                 `;
                 const tbody = table.querySelector('tbody');
                 let monthTotal = 0;
 
-                exp.forEach((e, idx) => {
+                exp.forEach((e) => {
+                    const globalIdx = expenses.indexOf(e);
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${e.date}</td>
                         <td>${e.desc}</td>
                         <td>${e.category}</td>
                         <td class="amount">${formatIndianRupees(e.amount)}</td>
+                        <td>${e.photos && e.photos.length > 0 ? `<button class="action-btn photo-btn" onclick="viewPhotos(${globalIdx})">${translations[lang].view_photos} (${e.photos.length})</button>` : translations[lang].no_photos}</td>
                         <td>
-                            <button class="action-btn edit-btn" data-expense-idx="${idx}">Edit</button>
-                            <button class="action-btn delete-btn" data-expense-idx="${idx}">Delete</button>
+                            <button class="action-btn edit-btn" data-expense-idx="${globalIdx}">Edit</button>
+                            <button class="action-btn delete-btn" data-expense-idx="${globalIdx}">Delete</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -802,7 +896,7 @@
 
                 const totalDiv = document.createElement('div');
                 totalDiv.className = 'month-total';
-                totalDiv.innerHTML = translations[document.getElementById('language-select').value].month_total + `<span class="amount">${formatIndianRupees(monthTotal)}</span>`;
+                totalDiv.innerHTML = translations[lang].month_total + `<span class="amount">${formatIndianRupees(monthTotal)}</span>`;
                 expensesContainer.appendChild(totalDiv);
             } else {
                 const expensesByMonth = {};
@@ -833,7 +927,7 @@
                         const table = document.createElement('table');
                         table.innerHTML = `
                             <thead>
-                                <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr>
+                                <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>${translations[lang].photos_col}</th><th>Actions</th></tr>
                             </thead>
                             <tbody></tbody>
                         `;
@@ -848,6 +942,7 @@
                                 <td>${e.desc}</td>
                                 <td>${e.category}</td>
                                 <td class="amount">${formatIndianRupees(e.amount)}</td>
+                                <td>${e.photos && e.photos.length > 0 ? `<button class="action-btn photo-btn" onclick="viewPhotos(${globalIdx})">${translations[lang].view_photos} (${e.photos.length})</button>` : translations[lang].no_photos}</td>
                                 <td>
                                     <button class="action-btn edit-btn" data-expense-idx="${globalIdx}">Edit</button>
                                     <button class="action-btn delete-btn" data-expense-idx="${globalIdx}">Delete</button>
@@ -861,7 +956,7 @@
 
                         const totalDiv = document.createElement('div');
                         totalDiv.className = 'month-total';
-                        totalDiv.innerHTML = translations[document.getElementById('language-select').value].month_total + `<span class="amount">${formatIndianRupees(monthTotal)}</span>`;
+                        totalDiv.innerHTML = translations[lang].month_total + `<span class="amount">${formatIndianRupees(monthTotal)}</span>`;
                         monthSection.appendChild(totalDiv);
 
                         expensesContainer.appendChild(monthSection);
@@ -870,7 +965,7 @@
 
                     const grandTotalDiv = document.createElement('div');
                     grandTotalDiv.className = 'all-time-total';
-                    grandTotalDiv.innerHTML = translations[document.getElementById('language-select').value].all_time_total + `<span class="amount">${formatIndianRupees(grandTotal)}</span>`;
+                    grandTotalDiv.innerHTML = translations[lang].all_time_total + `<span class="amount">${formatIndianRupees(grandTotal)}</span>`;
                     expensesContainer.appendChild(grandTotalDiv);
                 }
             }
@@ -898,7 +993,7 @@
                 const table = document.createElement('table');
                 table.innerHTML = `
                     <thead>
-                        <tr><th>Date</th><th>Flat No.</th><th>Occupancy</th><th>Member Name</th><th>Amount</th><th>Actions</th></tr>
+                        <tr><th>Date</th><th>Flat No.</th><th>Occupancy</th><th>Member Name</th><th>Contact No.</th><th>Amount</th><th>Actions</th></tr>
                     </thead>
                     <tbody></tbody>
                 `;
@@ -910,7 +1005,9 @@
 
                     const status = flatStatus[flat] || (latestPayment && latestPayment.name ? 'occupied' : 'vacant');
                     const statusClass = status === 'occupied' ? 'occupied' : 'vacant';
-                    const statusText = status === 'occupied' ? translations[document.getElementById('language-select').value].occupied : translations[document.getElementById('language-select').value].vacant;
+                    const statusText = status === 'occupied' ? translations[lang].occupied : translations[lang].vacant;
+
+                    const contact = latestPayment && latestPayment.contact ? latestPayment.contact : '—';
 
                     const row = document.createElement('tr');
                     row.innerHTML = `
@@ -918,9 +1015,10 @@
                         <td>${flat}</td>
                         <td>
                             <span class="occupancy-status ${statusClass}">${statusText}</span>
-                            <button class="action-btn" onclick="toggleOccupancy('${flat}')">${translations[document.getElementById('language-select').value].toggle}</button>
+                            <button class="action-btn" onclick="toggleOccupancy('${flat}')">${translations[lang].toggle}</button>
                         </td>
                         <td>${latestPayment ? latestPayment.name || '—' : '—'}</td>
+                        <td>${contact}</td>
                         <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : formatIndianRupees(0)}</td>
                         <td>
                             ${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button>
@@ -1151,14 +1249,27 @@
             doc.save(`Maintenance_Invoice_${monthTitle.replace(/ /g, '')}.pdf`);
         }
 
-        document.getElementById('expense-form').addEventListener('submit', (e) => {
+        document.getElementById('expense-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            expenses.push({
+            const newExpense = {
                 date: document.getElementById('exp-date').value,
                 desc: document.getElementById('exp-desc').value.trim(),
                 category: document.getElementById('exp-category').value,
-                amount: document.getElementById('exp-amount').value
-            });
+                amount: document.getElementById('exp-amount').value,
+                photos: []
+            };
+            const files = document.getElementById('exp-photo').files;
+            if (files.length > 0) {
+                const photoPromises = Array.from(files).map(file => {
+                    return new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                });
+                newExpense.photos = await Promise.all(photoPromises);
+            }
+            expenses.push(newExpense);
             saveData();
             e.target.reset();
             alert("Expense added!");
@@ -1168,11 +1279,13 @@
             e.preventDefault();
             const selectedFlat = document.getElementById('pay-flat').value;
             const name = document.getElementById('pay-vacant').checked ? '' : document.getElementById('pay-name').value.trim();
+            const contact = document.getElementById('pay-contact').value.trim();
 
             payments.push({
                 date: document.getElementById('pay-date').value,
                 flat: selectedFlat,
                 name: name,
+                contact: contact,
                 amount: document.getElementById('pay-amount').value
             });
 
@@ -1189,7 +1302,8 @@
             alert("Payment added!");
         });
 
-        function editExpense(idx, button) {
+        async function editExpense(idx, button) {
+            const lang = document.getElementById('language-select').value;
             const row = button.parentElement.parentElement;
             const cells = row.children;
             const original = expenses[idx];
@@ -1203,14 +1317,60 @@
             </select>`;
             cells[3].innerHTML = `<input type="number" class="editable-input" step="0.01" value="${original.amount}">`;
 
+            // Photos cell
+            let photosHtml = '<div>';
+            if (original.photos && original.photos.length > 0) {
+                original.photos.forEach((photo, i) => {
+                    photosHtml += `
+                        <div style="display: inline-block; margin: 5px;">
+                            <img src="${photo}" style="width:50px; height:50px; object-fit:cover; border:1px solid #ccc;">
+                            <br><input type="checkbox" data-delete-photo="${i}"> ${translations[lang].delete_photo}
+                        </div>
+                    `;
+                });
+            }
+            photosHtml += '</div><br><input type="file" multiple accept="image/*" id="new-photos-${idx}">';
+
+            cells[4].innerHTML = photosHtml;
+
             button.textContent = 'Save';
             button.className = 'action-btn save-btn';
-            button.onclick = () => {
+            button.onclick = async () => {
+                const newDate = cells[0].querySelector('input').value;
+                const newDesc = cells[1].querySelector('input').value.trim();
+                const newCategory = cells[2].querySelector('select').value;
+                const newAmount = cells[3].querySelector('input').value;
+
+                // Handle photos
+                let keptPhotos = [];
+                if (original.photos) {
+                    for (let i = 0; i < original.photos.length; i++) {
+                        const deleteChk = cells[4].querySelector(`[data-delete-photo="${i}"]`);
+                        if (!deleteChk || !deleteChk.checked) {
+                            keptPhotos.push(original.photos[i]);
+                        }
+                    }
+                }
+
+                const newFileInput = document.getElementById(`new-photos-${idx}`);
+                if (newFileInput && newFileInput.files.length > 0) {
+                    const newPromises = Array.from(newFileInput.files).map(file => {
+                        return new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.readAsDataURL(file);
+                        });
+                    });
+                    const newDataUrls = await Promise.all(newPromises);
+                    keptPhotos = keptPhotos.concat(newDataUrls);
+                }
+
                 expenses[idx] = {
-                    date: cells[0].querySelector('input').value,
-                    desc: cells[1].querySelector('input').value.trim(),
-                    category: cells[2].querySelector('select').value,
-                    amount: cells[3].querySelector('input').value
+                    date: newDate,
+                    desc: newDesc,
+                    category: newCategory,
+                    amount: newAmount,
+                    photos: keptPhotos
                 };
                 saveData();
             };
@@ -1219,7 +1379,7 @@
             cancelBtn.textContent = 'Cancel';
             cancelBtn.className = 'action-btn cancel-btn';
             cancelBtn.onclick = () => renderLists();
-            cells[4].appendChild(cancelBtn);
+            cells[5].appendChild(cancelBtn);
         }
 
         function editPayment(idx, button) {
@@ -1233,7 +1393,8 @@
                 ${allFlats.map(f => `<option>${f}</option>`).join('')}
             </select>`;
             cells[3].innerHTML = `<input type="text" class="editable-input" value="${original.name || ''}">`;
-            cells[4].innerHTML = `<input type="number" class="editable-input" step="0.01" value="${original.amount}">`;
+            cells[4].innerHTML = `<input type="text" class="editable-input" value="${original.contact || ''}">`;
+            cells[5].innerHTML = `<input type="number" class="editable-input" step="0.01" value="${original.amount}">`;
 
             button.textContent = 'Save';
             button.className = 'action-btn save-btn';
@@ -1243,7 +1404,8 @@
                     date: cells[0].querySelector('input').value,
                     flat: cells[1].querySelector('select').value,
                     name: newName,
-                    amount: cells[4].querySelector('input').value
+                    contact: cells[4].querySelector('input').value.trim(),
+                    amount: cells[5].querySelector('input').value
                 };
 
                 if (newName) {
@@ -1259,7 +1421,7 @@
             cancelBtn.textContent = 'Cancel';
             cancelBtn.className = 'action-btn cancel-btn';
             cancelBtn.onclick = () => renderLists();
-            cells[5].appendChild(cancelBtn);
+            cells[6].appendChild(cancelBtn);
         }
 
         function deleteExpense(idx) {
@@ -1283,7 +1445,7 @@
             document.querySelector(`.tab-btn[onclick="openTab('${tabName}')"]`).classList.add('active');
 
             if (tabName === 'lists') renderLists();
-            if (tabName === 'reports') renderReports();
+            if (tabName === 'dashboard') renderReports();
         }
 
         const today = new Date().toISOString().split('T')[0];
