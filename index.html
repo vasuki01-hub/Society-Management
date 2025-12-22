@@ -66,6 +66,7 @@
         header { text-align: center; margin-bottom: 30px; position: relative; }
         h1 { color: var(--heading); }
         .header-controls {
+            position: relative;
             top: 0;
             right: 0;
             padding: 10px;
@@ -84,7 +85,7 @@
         .theme-toggle button {
             cursor: pointer;
             padding: 8px 12px;
-            font-size: 0.8em;
+            font-size: 0.9em;
             border-radius: 15px;
             border: 1px solid var(--input-border);
             background: var(--container-bg);
@@ -153,10 +154,10 @@
             border-radius: 8px;
         }
         input, select, button, textarea {
-            padding: 12px;
-            border: 1px solid var(--input-border);
-            border-radius: 5px;
-            font-size: 0.7rem;
+            padding: 10px;
+            border: 2.5px solid var(--input-border);
+            border-radius: 20px;
+            font-size: 0.6rem;
             background: var(--container-bg);
             color: var(--text);
         }
@@ -227,6 +228,7 @@
         .cancel-btn { background: #95a5a6; color: white; }
         .delete-btn { background: #e74c3c; color: white; }
         .photo-btn { background: #3498db; color: white; }
+        .delete-photo-btn { background: #e74c3c; color: white; font-size: 1.2em; padding: 2px 6px; border-radius: 50%; }
         .editable-input {
             padding: 8px;
             width: 100%;
@@ -377,9 +379,88 @@
             margin: 10px 0;
             color: #27ae60;
         }
+
+        /* Photo Modal */
+        .photo-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .photo-modal-content {
+            max-width: 90%;
+            max-height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        .photo-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .photo-modal-caption {
+            color: white;
+            margin-top: 15px;
+            font-size: 1.1em;
+        }
+        .photo-nav {
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            margin: 0 30px;
+            user-select: none;
+        }
+
+        /* Edit mode photo preview */
+        .edit-photo-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .edit-photo-item {
+            position: relative;
+            width: 100px;
+            height: 100px;
+        }
+        .edit-photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+        }
+        .edit-photo-item .delete-photo-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+        }
     </style>
 </head>
 <body>
+    <!-- Photo Modal -->
+    <div id="photo-modal" class="photo-modal">
+        <span class="photo-modal-close" onclick="closePhotoModal()">&times;</span>
+        <div style="display: flex; align-items: center;">
+            <span class="photo-nav" onclick="prevPhoto()">&#10094;</span>
+            <img id="modal-photo" class="photo-modal-content" alt="Expense Photo">
+            <span class="photo-nav" onclick="nextPhoto()">&#10095;</span>
+        </div>
+        <div id="photo-caption" class="photo-modal-caption"></div>
+    </div>
+
     <!-- Login Page -->
     <div id="login-page">
         <div class="login-box">
@@ -395,7 +476,7 @@
     <div id="main-app" class="container">
         <header>
             <h1 data-lang="title">Society Maintenance & Expenses Manager</h1>
-            <div class="header-controls" style="FONT-SIZE: large; POSITION: relative;">
+            <div class="header-controls">
                 <div class="language-selector">
                     <select id="language-select" onchange="changeLanguage()">
                         <option value="en">English</option>
@@ -541,7 +622,6 @@
     </div>
 
     <script>
-        // === Firebase Config (Replace with your own if needed) ===
         const firebaseConfig = {
             apiKey: "AIzaSyDbBlEekQYG81mdbfGy_7-wQMdz-OZ-CLM",
             authDomain: "studio-6643913702-f80ae.firebaseapp.com",
@@ -550,17 +630,18 @@
             messagingSenderId: "726461626607",
             appId: "1:726461626607:web:63773739648732a252c31a"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const DATA_DOC = "society/data";  // Cloud document for all data
-
+        const DATA_DOC = "society/data";
         const APP_PASSWORD = "GB3";
 
         let expenses = [];
         let payments = [];
         let flatStatus = {};
         let expensesChart = null, overallProgressChart = null, balanceChart = null;
+
+        let currentPhotoIndex = 0;
+        let currentPhotosArray = [];
 
         const allFlats = ['109','110','111','112','209','210','211','212','309','310','311','312','409','410','411','412'];
         const floorMap = {
@@ -611,10 +692,8 @@
                 Download_Maintenance_Report_PDF: "Download Maintenance Report PDF",
                 month_total: "Month Total: ",
                 all_time_total: "All Time Total Expenses: ",
-                photos_col: "Photos",
                 view_photos: "View Photos",
-                no_photos: "No Photos",
-                delete_photo: "Delete Photo"
+                no_photos: "No Photos"
             },
             hi: {
                 title: "सोसायटी मेंटेनेंस और खर्च प्रबंधक",
@@ -655,10 +734,8 @@
                 Download_Maintenance_Report_PDF: "रखरखाव रिपोर्ट पीडीएफ डाउनलोड करें",
                 month_total: "माह कुल: ",
                 all_time_total: "सभी समय कुल खर्च: ",
-                photos_col: "फोटो",
                 view_photos: "फोटो देखें",
-                no_photos: "कोई फोटो नहीं",
-                delete_photo: "फोटो हटाएं"
+                no_photos: "कोई फोटो नहीं"
             },
             gu: {
                 title: "સોસાયટી મેઇન્ટેનન્સ અને ખર્ચ મેનેજર",
@@ -699,14 +776,11 @@
                 Download_Maintenance_Report_PDF: "જાળવણી અહેવાલ પીડીએફ ડાઉનલોડ કરો",
                 month_total: "મહિનો કુલ: ",
                 all_time_total: "બધા સમય કુલ ખર્ચ: ",
-                photos_col: "ફોટા",
                 view_photos: "ફોટો જુઓ",
-                no_photos: "કોઈ ફોટા નથી",
-                delete_photo: "ફોટો ડિલીટ કરો"
+                no_photos: "કોઈ ફોટા નથી"
             }
         };
 
-        // Load data from Firestore
         async function loadData() {
             try {
                 const doc = await db.doc(DATA_DOC).get();
@@ -715,10 +789,6 @@
                     expenses = data.expenses || [];
                     payments = data.payments || [];
                     flatStatus = data.flatStatus || {};
-                } else {
-                    expenses = [];
-                    payments = [];
-                    flatStatus = {};
                 }
                 document.getElementById('sync-status').textContent = "Data synced successfully!";
                 document.getElementById('sync-status').style.color = "#27ae60";
@@ -730,8 +800,7 @@
             initApp();
         }
 
-        // Save data to Firestore
-        async function saveData() {
+        async function saveDataToCloud() {
             try {
                 await db.doc(DATA_DOC).set({
                     expenses,
@@ -744,73 +813,11 @@
             }
         }
 
-        // Check if already logged in on page load/refresh
-        document.addEventListener('DOMContentLoaded', () => {
-            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-            const loginPage = document.getElementById('login-page');
-            const mainApp = document.getElementById('main-app');
-            const logoutBtn = document.getElementById('logout-btn');
-
-            if (isLoggedIn) {
-                loginPage.style.display = 'none';
-                mainApp.style.display = 'block';
-                logoutBtn.style.display = 'block';
-                loadData();
-            } else {
-                loginPage.style.display = 'flex';
-                mainApp.style.display = 'none';
-                logoutBtn.style.display = 'none';
-            }
-
-            const loginBtn = document.getElementById('login-btn');
-            const passwordInput = document.getElementById('login-password');
-            const errorMsg = document.getElementById('login-error');
-
-            loginBtn.addEventListener('click', () => {
-                const password = passwordInput.value.trim();
-                if (password === APP_PASSWORD) {
-                    localStorage.setItem('isLoggedIn', 'true');
-                    loginPage.style.display = 'none';
-                    mainApp.style.display = 'block';
-                    logoutBtn.style.display = 'block';
-                    loadData();
-                } else {
-                    errorMsg.style.display = 'block';
-                }
-            });
-
-            passwordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    loginBtn.click();
-                }
-            });
-
-            // Logout button
-            logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('isLoggedIn');
-                loginPage.style.display = 'flex';
-                mainApp.style.display = 'none';
-                logoutBtn.style.display = 'none';
-                expenses = [];
-                payments = [];
-                flatStatus = {};
-            });
-        });
-
-        function initApp() {
-            const savedLang = localStorage.getItem('preferredLanguage') || 'en';
-            document.getElementById('language-select').value = savedLang;
-            changeLanguage();
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-                document.querySelector('.theme-toggle button').textContent = 'Light Mode';
-            }
-            populateMonthSelects();
+        function saveData() {
+            saveDataToCloud();
             updateDashboard();
             renderLists();
             renderReports();
-            openTab('dashboard');
         }
 
         function formatIndianRupees(amount) {
@@ -836,16 +843,6 @@
             document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-lang-placeholder');
                 if (translations[lang][key]) el.placeholder = translations[lang][key];
-            });
-            document.querySelectorAll('.occupancy-status').forEach(span => {
-                const current = span.textContent.trim();
-                if (['Occupied', 'व्याप्त', 'વ્યાપ્ત'].includes(current)) span.textContent = translations[lang].occupied;
-                if (['Vacant', 'रिक्त', 'ખાલી'].includes(current)) span.textContent = translations[lang].vacant;
-            });
-            document.querySelectorAll('.action-btn').forEach(btn => {
-                if (btn.textContent.trim() === 'Toggle' || btn.textContent.trim() === 'टॉगल' || btn.textContent.trim() === 'ટૉગલ') {
-                    btn.textContent = translations[lang].toggle;
-                }
             });
             localStorage.setItem('preferredLanguage', lang);
             renderLists();
@@ -919,26 +916,6 @@
             };
         }
 
-        function saveData() {
-            saveDataToCloud(); // Use cloud save
-            updateDashboard();
-            renderLists();
-            renderReports();
-        }
-
-        async function saveDataToCloud() {
-            try {
-                await db.doc(DATA_DOC).set({
-                    expenses,
-                    payments,
-                    flatStatus,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } catch (err) {
-                console.error("Save error:", err);
-            }
-        }
-
         function updateDashboard() {
             const totalExp = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
             const totalPay = payments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
@@ -949,6 +926,88 @@
             document.getElementById('balance').style.color = balance >= 0 ? '#27ae60' : '#e74c3c';
         }
 
+        function renderReports() {
+            const monthKey = document.getElementById('report-month').value || 'all';
+            const { exp, pay } = getFilteredData(monthKey);
+            const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+            document.getElementById('report-month-title').textContent = monthTitle;
+
+            const monthlyExp = exp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+            const monthlyPay = pay.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+            const monthlyBal = monthlyPay - monthlyExp;
+
+            document.getElementById('expensesText').textContent = formatIndianRupees(monthlyExp) + ' / ' + formatIndianRupees(monthlyPay);
+            document.getElementById('balanceText').textContent = formatIndianRupees(monthlyBal);
+            const overallPercent = monthlyExp > 0 ? (monthlyExp / monthlyPay) * 100 : 0;
+            document.getElementById('overallProgressText').textContent = `${overallPercent.toFixed(0)}%`;
+
+            if (expensesChart) expensesChart.destroy();
+            if (overallProgressChart) overallProgressChart.destroy();
+            if (balanceChart) balanceChart.destroy();
+
+            expensesChart = new Chart(document.getElementById('expensesChart'), {
+                type: 'doughnut',
+                data: { labels: ['Expenses', 'Collected'], datasets: [{ data: [monthlyExp, monthlyPay], backgroundColor: ['#e74c3c', '#27ae60'], borderWidth: 0 }] },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+            });
+
+            overallProgressChart = new Chart(document.getElementById('overallProgressChart'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: [overallPercent, 100 - overallPercent], backgroundColor: ['#3498db', '#ecf0f1'], borderWidth: 0 }] },
+                options: { responsive: true, cutout: '85%', plugins: { legend: { display: false } } }
+            });
+
+            const balanceColor = monthlyBal >= 0 ? '#27ae60' : '#e74c3c';
+            balanceChart = new Chart(document.getElementById('balanceChart'), {
+                type: 'doughnut',
+                data: { datasets: [{ data: monthlyBal >= 0 ? [Math.abs(monthlyBal), 0] : [0, Math.abs(monthlyBal)], backgroundColor: [balanceColor, '#ecf0f1'], borderWidth: 0 }] },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+            });
+
+            const lang = document.getElementById('language-select').value;
+            const flatContainer = document.getElementById('flat-progress-container');
+            flatContainer.innerHTML = '';
+            allFlats.forEach(flat => {
+                const flatPayments = pay.filter(p => p.flat === flat);
+                const paidAmount = flatPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                const expectedPerFlat = monthlyExp / 16;
+                const percent = expectedPerFlat > 0 ? (paidAmount / expectedPerFlat) * 100 : 0;
+                const cappedPercent = Math.min(100, Math.max(0, percent));
+                const status = flatStatus[flat] || (flatPayments.some(p => p.name) ? 'occupied' : 'vacant');
+                const statusClass = status === 'occupied' ? 'occupied' : 'vacant';
+                const statusText = status === 'occupied' ? translations[lang].occupied : translations[lang].vacant;
+
+                const item = document.createElement('div');
+                item.className = 'flat-item';
+                item.innerHTML = `
+                    <div class="flat-name">Flat ${flat} <span class="occupancy-status ${statusClass}" style="font-size:0.8em;">${statusText}</span></div>
+                    <div class="flat-progress-bar"><div class="flat-progress-fill" style="width: ${cappedPercent}%;"></div></div>
+                    <div class="flat-percent">${cappedPercent.toFixed(0)}% <br><small class="amount">${formatIndianRupees(paidAmount)} paid</small></div>
+                `;
+                flatContainer.appendChild(item);
+            });
+
+            const container = document.getElementById('category-breakdown');
+            container.innerHTML = '';
+            if (exp.length === 0) {
+                container.innerHTML = '<p>No expenses in this period.</p>';
+                return;
+            }
+            const categoryTotals = {};
+            exp.forEach(e => {
+                const cat = e.category || 'Other';
+                categoryTotals[cat] = (categoryTotals[cat] || 0) + parseFloat(e.amount);
+            });
+            Object.keys(categoryTotals).sort().forEach(cat => {
+                const amount = categoryTotals[cat];
+                const percentage = monthlyExp > 0 ? ((amount / monthlyExp) * 100).toFixed(1) : 0;
+                const div = document.createElement('div');
+                div.className = 'category-item';
+                div.innerHTML = `<span>${cat}</span><span class="amount">${formatIndianRupees(amount)}</span> <em>(${percentage}%)</em>`;
+                container.appendChild(div);
+            });
+        }
+
         function renderLists() {
             const lang = document.getElementById('language-select').value;
             const monthKey = document.getElementById('list-month').value || 'all';
@@ -956,26 +1015,32 @@
             const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
             document.getElementById('list-month-title').textContent = monthTitle;
             document.getElementById('list-month-title2').textContent = monthTitle;
+
             const expensesContainer = document.getElementById('expenses-container');
             expensesContainer.innerHTML = '';
+
+            // Expenses rendering (unchanged)
             if (monthKey !== 'all') {
                 const table = document.createElement('table');
                 table.innerHTML = `
                     <thead>
-                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr>
+                        <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Photos</th><th>Actions</th></tr>
                     </thead>
                     <tbody></tbody>
                 `;
                 const tbody = table.querySelector('tbody');
                 let monthTotal = 0;
-                exp.forEach((e) => {
+                exp.forEach(e => {
                     const globalIdx = expenses.indexOf(e);
+                    const hasPhotos = e.photos && e.photos.length > 0;
+                    const photoCell = hasPhotos ? `<button class="action-btn photo-btn" onclick="openPhotoModal(${globalIdx})">${translations[lang].view_photos} (${e.photos.length})</button>` : translations[lang].no_photos;
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${e.date}</td>
                         <td>${e.desc}</td>
                         <td>${e.category}</td>
                         <td class="amount">${formatIndianRupees(e.amount)}</td>
+                        <td>${photoCell}</td>
                         <td>
                             <button class="action-btn edit-btn" data-expense-idx="${globalIdx}">Edit</button>
                             <button class="action-btn delete-btn" data-expense-idx="${globalIdx}">Delete</button>
@@ -1010,10 +1075,11 @@
                         heading.className = 'month-heading';
                         heading.textContent = monthName;
                         monthSection.appendChild(heading);
+
                         const table = document.createElement('table');
                         table.innerHTML = `
                             <thead>
-                                <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Actions</th></tr>
+                                <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Photos</th><th>Actions</th></tr>
                             </thead>
                             <tbody></tbody>
                         `;
@@ -1021,12 +1087,15 @@
                         let monthTotal = 0;
                         monthExps.forEach(e => {
                             const globalIdx = expenses.indexOf(e);
+                            const hasPhotos = e.photos && e.photos.length > 0;
+                            const photoCell = hasPhotos ? `<button class="action-btn photo-btn" onclick="openPhotoModal(${globalIdx})">${translations[lang].view_photos} (${e.photos.length})</button>` : translations[lang].no_photos;
                             const row = document.createElement('tr');
                             row.innerHTML = `
                                 <td>${e.date}</td>
                                 <td>${e.desc}</td>
                                 <td>${e.category}</td>
                                 <td class="amount">${formatIndianRupees(e.amount)}</td>
+                                <td>${photoCell}</td>
                                 <td>
                                     <button class="action-btn edit-btn" data-expense-idx="${globalIdx}">Edit</button>
                                     <button class="action-btn delete-btn" data-expense-idx="${globalIdx}">Delete</button>
@@ -1049,16 +1118,17 @@
                     expensesContainer.appendChild(grandTotalDiv);
                 }
             }
+
             document.querySelectorAll('[data-expense-idx]').forEach(btn => {
                 const idx = parseInt(btn.getAttribute('data-expense-idx'));
-                if (btn.classList.contains('edit-btn')) {
-                    btn.onclick = () => editExpense(idx, btn);
-                } else if (btn.classList.contains('delete-btn')) {
-                    btn.onclick = () => deleteExpense(idx);
-                }
+                if (btn.classList.contains('edit-btn')) btn.onclick = () => editExpense(idx, btn);
+                if (btn.classList.contains('delete-btn')) btn.onclick = () => deleteExpense(idx);
             });
+
+            // Maintenance section - month-wise for "All Time"
             const container = document.getElementById('floor-payments-container');
             container.innerHTML = '';
+
             if (monthKey === 'all') {
                 const paymentsByMonth = {};
                 payments.forEach(p => {
@@ -1067,18 +1137,22 @@
                     if (!paymentsByMonth[key]) paymentsByMonth[key] = [];
                     paymentsByMonth[key].push(p);
                 });
-                const sortedMonthKeys = Object.keys(paymentsByMonth).sort().reverse();
-                if (sortedMonthKeys.length === 0) {
+
+                const sortedKeys = Object.keys(paymentsByMonth).sort().reverse();
+
+                if (sortedKeys.length === 0) {
                     container.innerHTML = '<div class="no-data">No payments recorded yet.</div>';
                 } else {
-                    sortedMonthKeys.forEach(key => {
+                    sortedKeys.forEach(key => {
                         const monthPayments = paymentsByMonth[key];
                         const monthName = new Date(key + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+
                         const monthSection = document.createElement('div');
                         const monthHeading = document.createElement('h3');
                         monthHeading.className = 'month-heading';
                         monthHeading.textContent = monthName;
                         monthSection.appendChild(monthHeading);
+
                         floors.forEach(floor => {
                             const floorFlats = allFlats.filter(f => floorMap[f] === floor);
                             const floorSection = document.createElement('div');
@@ -1086,6 +1160,7 @@
                             floorHeading.className = 'floor-heading';
                             floorHeading.textContent = floor;
                             floorSection.appendChild(floorHeading);
+
                             const table = document.createElement('table');
                             table.innerHTML = `
                                 <thead>
@@ -1094,6 +1169,7 @@
                                 <tbody></tbody>
                             `;
                             const tbody = table.querySelector('tbody');
+
                             floorFlats.forEach(flat => {
                                 const flatPaymentsInMonth = monthPayments.filter(p => p.flat === flat);
                                 const latestPayment = flatPaymentsInMonth.length > 0 ? flatPaymentsInMonth[flatPaymentsInMonth.length - 1] : null;
@@ -1111,17 +1187,16 @@
                                     </td>
                                     <td>${latestPayment ? latestPayment.name || '—' : '—'}</td>
                                     <td>${contact}</td>
-                                    <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : formatIndianRupees(0)}</td>
-                                    <td>
-                                        ${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button>
-                                        <button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}
-                                    </td>
+                                    <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : '₹0.00'}</td>
+                                    <td>${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button><button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}</td>
                                 `;
                                 tbody.appendChild(row);
                             });
+
                             floorSection.appendChild(table);
                             monthSection.appendChild(floorSection);
                         });
+
                         container.appendChild(monthSection);
                     });
                 }
@@ -1158,11 +1233,8 @@
                             </td>
                             <td>${latestPayment ? latestPayment.name || '—' : '—'}</td>
                             <td>${contact}</td>
-                            <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : formatIndianRupees(0)}</td>
-                            <td>
-                                ${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button>
-                                <button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}
-                            </td>
+                            <td class="amount">${latestPayment ? formatIndianRupees(latestPayment.amount) : '₹0.00'}</td>
+                            <td>${latestPayment ? `<button class="action-btn edit-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Edit</button><button class="action-btn delete-btn" data-payment-idx="${payments.indexOf(latestPayment)}">Delete</button>` : ''}</td>
                         `;
                         tbody.appendChild(row);
                     });
@@ -1170,13 +1242,11 @@
                     container.appendChild(floorSection);
                 });
             }
+
             document.querySelectorAll('[data-payment-idx]').forEach(btn => {
                 const idx = parseInt(btn.getAttribute('data-payment-idx'));
-                if (btn.classList.contains('edit-btn')) {
-                    btn.onclick = () => editPayment(idx, btn);
-                } else if (btn.classList.contains('delete-btn')) {
-                    btn.onclick = () => deletePayment(idx);
-                }
+                if (btn.classList.contains('edit-btn')) btn.onclick = () => editPayment(idx, btn);
+                if (btn.classList.contains('delete-btn')) btn.onclick = () => deletePayment(idx);
             });
         }
 
@@ -1185,239 +1255,107 @@
             saveData();
         }
 
-        function renderReports() {
-            const monthKey = document.getElementById('report-month').value || 'all';
-            const { exp, pay } = getFilteredData(monthKey);
-            const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
-            document.getElementById('report-month-title').textContent = monthTitle;
-            const monthlyExp = exp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-            const monthlyPay = pay.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-            const monthlyBal = monthlyPay - monthlyExp;
-            document.getElementById('expensesText').textContent = formatIndianRupees(monthlyExp) + ' / ' + formatIndianRupees(monthlyPay);
-            document.getElementById('balanceText').textContent = formatIndianRupees(monthlyBal);
-            const overallPercent = monthlyExp > 0 ? (monthlyExp/monthlyPay) * 100 : 0;
-            document.getElementById('overallProgressText').textContent = `${overallPercent.toFixed(0)}%`;
-            if (expensesChart) expensesChart.destroy();
-            if (overallProgressChart) overallProgressChart.destroy();
-            if (balanceChart) balanceChart.destroy();
-            expensesChart = new Chart(document.getElementById('expensesChart'), {
-                type: 'doughnut',
-                data: { labels: ['Expenses', 'Collected'], datasets: [{ data: [monthlyExp, monthlyPay], backgroundColor: ['#e74c3c', '#27ae60'], borderWidth: 0 }] },
-                options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
-            });
-            overallProgressChart = new Chart(document.getElementById('overallProgressChart'), {
-                type: 'doughnut',
-                data: { datasets: [{ data: [overallPercent, 100 - overallPercent], backgroundColor: ['#3498db', '#ecf0f1'], borderWidth: 0, weight: 0.3 }] },
-                options: { responsive: true, cutout: '85%', plugins: { legend: { display: false } } }
-            });
-            const balanceColor = monthlyBal >= 0 ? '#27ae60' : '#e74c3c';
-            balanceChart = new Chart(document.getElementById('balanceChart'), {
-                type: 'doughnut',
-                data: { datasets: [{ data: monthlyBal >= 0 ? [Math.abs(monthlyBal), 0] : [0, Math.abs(monthlyBal)], backgroundColor: [balanceColor, '#ecf0f1'], borderWidth: 0 }] },
-                options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
-            });
-            const flatContainer = document.getElementById('flat-progress-container');
-            flatContainer.innerHTML = '';
-            allFlats.forEach(flat => {
-                const flatPayments = pay.filter(p => p.flat === flat);
-                const paidAmount = flatPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-                const expectedPerFlat = monthlyExp / 16;
-                const percent = expectedPerFlat > 0 ? (paidAmount / expectedPerFlat) * 100 : 0;
-                const cappedPercent = Math.min(100, Math.max(0, percent));
-                const status = flatStatus[flat] || (flatPayments.some(p => p.name) ? 'occupied' : 'vacant');
-                const statusClass = status === 'occupied' ? 'occupied' : 'vacant';
-                const statusText = status === 'occupied' ? translations[document.getElementById('language-select').value].occupied : translations[document.getElementById('language-select').value].vacant;
-                const item = document.createElement('div');
-                item.className = 'flat-item';
-                item.innerHTML = `
-                    <div class="flat-name">Flat ${flat} <span class="occupancy-status ${statusClass}" style="font-size:0.8em; margin-left:8px;">${statusText}</span></div>
-                    <div class="flat-progress-bar">
-                        <div class="flat-progress-fill" style="width: ${cappedPercent}%;"></div>
-                    </div>
-                    <div class="flat-percent">${cappedPercent.toFixed(0)}% <br><small class="amount">${formatIndianRupees(paidAmount)} paid</small></div>
-                `;
-                flatContainer.appendChild(item);
-            });
-            const container = document.getElementById('category-breakdown');
-            container.innerHTML = '';
-            if (exp.length === 0) {
-                container.innerHTML = '<p>Select a month to view breakdown.</p>';
-                return;
-            }
-            const categoryTotals = {};
-            exp.forEach(e => {
-                const cat = e.category;
-                categoryTotals[cat] = (categoryTotals[cat] || 0) + parseFloat(e.amount);
-            });
-            Object.keys(categoryTotals).sort().forEach(cat => {
-                const amount = categoryTotals[cat];
-                const percentage = monthlyExp > 0 ? ((amount / monthlyExp) * 100).toFixed(1) : 0;
-                const div = document.createElement('div');
-                div.className = 'category-item';
-                div.innerHTML = `<span class="category-name">${cat}</span>
-                                 <span class="amount">${formatIndianRupees(amount)}</span> <em>(${percentage}%)</em>`;
-                container.appendChild(div);
-            });
+        function openPhotoModal(idx) {
+            const expense = expenses[idx];
+            if (!expense.photos || expense.photos.length === 0) return;
+            currentPhotosArray = expense.photos;
+            currentPhotoIndex = 0;
+            document.getElementById('modal-photo').src = currentPhotosArray[0];
+            document.getElementById('photo-caption').textContent = `Photo 1 of ${currentPhotosArray.length}`;
+            document.getElementById('photo-modal').style.display = 'flex';
         }
 
-        async function generateExpensePDF() {
-            const monthKey = document.getElementById('report-month').value || 'all';
-            const { exp } = getFilteredData(monthKey);
-            const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            doc.setFontSize(20);
-            doc.text("Society Expense Report", 105, 20, { align: "center" });
-            doc.setFontSize(14);
-            doc.text(`Period: ${monthTitle}`, 105, 30, { align: "center" });
-            const tableData = exp.map(e => [
-                e.date,
-                e.desc,
-                e.category,
-                formatRupeesNoSymbol(e.amount)
-            ]);
-            const total = exp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-            doc.autoTable({
-                head: [['Date', 'Description', 'Category', 'Amount (Rs)']],
-                body: tableData,
-                startY: 40,
-                theme: 'grid',
-                headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                bodyStyles: { fontSize: 10 },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
-                columnStyles: {
-                    0: { halign: 'center', cellWidth: 32 },
-                    1: { halign: 'left', cellWidth: 70 },
-                    2: { halign: 'left', cellWidth: 38 },
-                    3: { halign: 'right', cellWidth: 40, fontStyle: 'bold' }
-                },
-                margin: { top: 40, left: 8, right: 8 },
-                styles: { cellPadding: 3, overflow: 'linebreak' },
-                pageBreak: 'auto',
-                rowPageBreak: 'avoid'
-            });
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Total Expenses: Rs ${formatRupeesNoSymbol(total)}`, 19, finalY);
-            doc.save(`Expense_Report_${monthTitle.replace(/ /g, '_')}.pdf`);
+        function closePhotoModal() {
+            document.getElementById('photo-modal').style.display = 'none';
         }
 
-        async function generateInvoicePDF() {
-            const monthKey = document.getElementById('report-month').value || 'all';
-            const { exp, pay } = getFilteredData(monthKey);
-            const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
-            const totalExp = exp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-            doc.setFontSize(20);
-            doc.text("Society Monthly Maintenance Invoice", 105, 20, { align: "center" });
-            doc.setFontSize(14);
-            doc.text(`Month: ${monthTitle}`, 105, 30, { align: "center" });
-            doc.setFontSize(12);
-            doc.text(`Total Society Expense: Rs ${formatRupeesNoSymbol(totalExp)}`, 105, 38, { align: "center" });
-            const tableData = allFlats.map(flat => {
-                const flatPayments = pay.filter(p => p.flat === flat);
-                const paid = flatPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-                const owner = flatPayments.length > 0 ? (flatPayments[0].name || 'Vacant') : (flatStatus[flat] === 'vacant' ? 'Vacant' : '—');
-                const status = flatStatus[flat] || (owner !== 'Vacant' && owner !== '—' ? 'Occupied' : 'Vacant');
-                return [
-                    flat,
-                    status,
-                    formatRupeesNoSymbol(paid),
-                    owner
-                ];
-            });
-            doc.autoTable({
-                head: [['Flat No.', 'Status', 'Paid (Rs)', 'Owner Name']],
-                body: tableData,
-                startY: 50,
-                theme: 'grid',
-                headStyles: { fillColor: [231, 76, 60], textColor: 255, fontStyle: 'bold', halign: 'center' },
-                bodyStyles: { fontSize: 10 },
-                alternateRowStyles: { fillColor: [250, 240, 230] },
-                columnStyles: {
-                    0: { halign: 'center', cellWidth: 28 },
-                    1: { halign: 'center', cellWidth: 32 },
-                    2: { halign: 'right', cellWidth: 48, fontStyle: 'bold' },
-                    3: { halign: 'left', cellWidth: 'auto' }
-                },
-                margin: { top: 50, left: 8, right: 8 },
-                styles: { cellPadding: 3, overflow: 'linebreak' },
-                pageBreak: 'auto',
-                rowPageBreak: 'avoid'
-            });
-            const totalCollected = pay.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Total Collected: Rs ${formatRupeesNoSymbol(totalCollected)}`, 19, finalY);
-            doc.save(`Maintenance_Invoice_${monthTitle.replace(/ /g, '')}.pdf`);
+        function prevPhoto() {
+            if (currentPhotoIndex > 0) {
+                currentPhotoIndex--;
+                document.getElementById('modal-photo').src = currentPhotosArray[currentPhotoIndex];
+                document.getElementById('photo-caption').textContent = `Photo ${currentPhotoIndex + 1} of ${currentPhotosArray.length}`;
+            }
         }
 
-        document.getElementById('expense-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const newExpense = {
-                date: document.getElementById('exp-date').value,
-                desc: document.getElementById('exp-desc').value.trim(),
-                category: document.getElementById('exp-category').value,
-                amount: document.getElementById('exp-amount').value,
-                photos: []
-            };
-            const files = document.getElementById('exp-photo').files;
-            if (files.length > 0) {
-                const photoPromises = Array.from(files).map(file => {
-                    return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => resolve(e.target.result);
-                        reader.readAsDataURL(file);
-                    });
-                });
-                newExpense.photos = await Promise.all(photoPromises);
+        function nextPhoto() {
+            if (currentPhotoIndex < currentPhotosArray.length - 1) {
+                currentPhotoIndex++;
+                document.getElementById('modal-photo').src = currentPhotosArray[currentPhotoIndex];
+                document.getElementById('photo-caption').textContent = `Photo ${currentPhotoIndex + 1} of ${currentPhotosArray.length}`;
             }
-            expenses.push(newExpense);
-            await saveData();
-            e.target.reset();
-            alert("Expense added!");
-        });
+        }
 
-        document.getElementById('payment-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const selectedFlat = document.getElementById('pay-flat').value;
-            const name = document.getElementById('pay-vacant').checked ? '' : document.getElementById('pay-name').value.trim();
-            const contact = document.getElementById('pay-contact').value.trim();
-            payments.push({
-                date: document.getElementById('pay-date').value,
-                flat: selectedFlat,
-                name: name,
-                contact: contact,
-                amount: document.getElementById('pay-amount').value
-            });
-            if (document.getElementById('pay-vacant').checked) {
-                flatStatus[selectedFlat] = 'vacant';
-            } else if (name) {
-                flatStatus[selectedFlat] = 'occupied';
-            }
-            await saveData();
-            e.target.reset();
-            document.getElementById('pay-vacant').checked = false;
-            toggleVacant();
-            alert("Payment added!");
-        });
+        window.onclick = function(event) {
+            const modal = document.getElementById('photo-modal');
+            if (event.target === modal) closePhotoModal();
+        };
 
         function editExpense(idx, button) {
-            const lang = document.getElementById('language-select').value;
             const row = button.parentElement.parentElement;
             const cells = row.children;
             const original = expenses[idx];
+
             cells[0].innerHTML = `<input type="date" class="editable-input" value="${original.date}">`;
             cells[1].innerHTML = `<input type="text" class="editable-input" value="${original.desc}">`;
             cells[2].innerHTML = `<select class="editable-input">
                 <option selected>${original.category}</option>
-                <option>Utilities</option><option>Repairs</option><option>Security</option>
-                <option>Cleaning</option><option>Staff Salary</option><option>Events</option><option>Other</option>
+                <option>Utilities</option><option>Repairs</option><option>Security</option><option>Cleaning</option>
+                <option>Staff Salary</option><option>Events</option><option>Other</option>
             </select>`;
             cells[3].innerHTML = `<input type="number" class="editable-input" step="0.01" value="${original.amount}">`;
+
+            let currentPhotos = original.photos ? [...original.photos] : [];
+
+            const photoDiv = document.createElement('div');
+            photoDiv.innerHTML = `
+                <input type="file" id="edit-exp-photo-${idx}" accept="image/*" multiple style="margin-bottom:10px;">
+                <div class="edit-photo-preview" id="edit-photo-preview-${idx}"></div>
+            `;
+            cells[4].innerHTML = '';
+            cells[4].appendChild(photoDiv);
+
+            const previewDiv = document.getElementById(`edit-photo-preview-${idx}`);
+            currentPhotos.forEach((src, pidx) => {
+                const item = document.createElement('div');
+                item.className = 'edit-photo-item';
+                item.innerHTML = `
+                    <img src="${src}">
+                    <button class="action-btn delete-photo-btn" data-pidx="${pidx}">×</button>
+                `;
+                previewDiv.appendChild(item);
+            });
+
+            document.getElementById(`edit-exp-photo-${idx}`).addEventListener('change', e => {
+                Array.from(e.target.files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = ev => {
+                        currentPhotos.push(ev.target.result);
+                        const item = document.createElement('div');
+                        item.className = 'edit-photo-item';
+                        item.innerHTML = `<img src="${ev.target.result}">`;
+                        previewDiv.appendChild(item);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            previewDiv.addEventListener('click', e => {
+                if (e.target.classList.contains('delete-photo-btn')) {
+                    const pidx = parseInt(e.target.dataset.pidx);
+                    currentPhotos.splice(pidx, 1);
+                    previewDiv.innerHTML = '';
+                    currentPhotos.forEach((src, newIdx) => {
+                        const item = document.createElement('div');
+                        item.className = 'edit-photo-item';
+                        item.innerHTML = `
+                            <img src="${src}">
+                            <button class="action-btn delete-photo-btn" data-pidx="${newIdx}">×</button>
+                        `;
+                        previewDiv.appendChild(item);
+                    });
+                }
+            });
+
             button.textContent = 'Save';
             button.className = 'action-btn save-btn';
             button.onclick = () => {
@@ -1425,15 +1363,17 @@
                     date: cells[0].querySelector('input').value,
                     desc: cells[1].querySelector('input').value.trim(),
                     category: cells[2].querySelector('select').value,
-                    amount: cells[3].querySelector('input').value
+                    amount: cells[3].querySelector('input').value,
+                    photos: currentPhotos
                 };
                 saveData();
             };
+
             const cancelBtn = document.createElement('button');
             cancelBtn.textContent = 'Cancel';
             cancelBtn.className = 'action-btn cancel-btn';
             cancelBtn.onclick = () => renderLists();
-            cells[4].appendChild(cancelBtn);
+            cells[5].appendChild(cancelBtn);
         }
 
         function editPayment(idx, button) {
@@ -1441,10 +1381,7 @@
             const cells = row.children;
             const original = payments[idx];
             cells[0].innerHTML = `<input type="date" class="editable-input" value="${original.date}">`;
-            cells[1].innerHTML = `<select class="editable-input">
-                <option selected>${original.flat}</option>
-                ${allFlats.map(f => `<option>${f}</option>`).join('')}
-            </select>`;
+            cells[1].innerHTML = `<select class="editable-input"><option selected>${original.flat}</option>${allFlats.map(f => `<option>${f}</option>`).join('')}</select>`;
             cells[3].innerHTML = `<input type="text" class="editable-input" value="${original.name || ''}">`;
             cells[4].innerHTML = `<input type="text" class="editable-input" value="${original.contact || ''}">`;
             cells[5].innerHTML = `<input type="number" class="editable-input" step="0.01" value="${original.amount}">`;
@@ -1459,11 +1396,8 @@
                     contact: cells[4].querySelector('input').value.trim(),
                     amount: cells[5].querySelector('input').value
                 };
-                if (newName) {
-                    flatStatus[payments[idx].flat] = 'occupied';
-                } else {
-                    flatStatus[payments[idx].flat] = 'vacant';
-                }
+                if (newName) flatStatus[payments[idx].flat] = 'occupied';
+                else flatStatus[payments[idx].flat] = 'vacant';
                 saveData();
             };
             const cancelBtn = document.createElement('button');
@@ -1496,11 +1430,181 @@
             if (tabName === 'dashboard') renderReports();
         }
 
+        async function generateExpensePDF() {
+            const monthKey = document.getElementById('report-month').value || 'all';
+            const { exp } = getFilteredData(monthKey);
+            const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            doc.setFontSize(18);
+            doc.text("Society Expense Report", 105, 20, { align: "center" });
+            doc.setFontSize(12);
+            doc.text(`Period: ${monthTitle}`, 105, 30, { align: "center" });
+
+            const tableData = exp.map(e => [
+                e.date,
+                e.desc,
+                e.category,
+                formatRupeesNoSymbol(e.amount)
+            ]);
+
+            const total = exp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+            doc.autoTable({
+                head: [['Date', 'Description', 'Category', 'Amount (Rs)']],
+                body: tableData,
+                startY: 40,
+                theme: 'grid',
+                headStyles: { fillColor: [52, 152, 219] },
+                columnStyles: { 3: { halign: 'right' } }
+            });
+
+            doc.setFontSize(14);
+            doc.text(`Total Expenses: Rs ${formatRupeesNoSymbol(total)}`, 14, doc.lastAutoTable.finalY + 10);
+            doc.save(`Expense_Report_${monthTitle.replace(/ /g, '_')}.pdf`);
+        }
+
+        async function generateInvoicePDF() {
+            const monthKey = document.getElementById('report-month').value || 'all';
+            const { exp, pay } = getFilteredData(monthKey);
+            const monthTitle = monthKey === 'all' ? 'All Time' : new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+            const totalExp = exp.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            doc.setFontSize(18);
+            doc.text("Society Maintenance Report", 105, 20, { align: "center" });
+            doc.setFontSize(12);
+            doc.text(`Period: ${monthTitle}`, 105, 30, { align: "center" });
+            doc.text(`Total Expense: Rs ${formatRupeesNoSymbol(totalExp)}`, 105, 38, { align: "center" });
+
+            const tableData = allFlats.map(flat => {
+                const flatPayments = pay.filter(p => p.flat === flat);
+                const paid = flatPayments.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+                const status = flatStatus[flat] || (flatPayments.some(p => p.name) ? 'Occupied' : 'Vacant');
+                const name = flatPayments.length > 0 ? (flatPayments[flatPayments.length - 1].name || '—') : '—';
+                return [flat, status, formatRupeesNoSymbol(paid), name];
+            });
+
+            doc.autoTable({
+                head: [['Flat No.', 'Status', 'Paid (Rs)', 'Owner Name']],
+                body: tableData,
+                startY: 50,
+                theme: 'grid',
+                headStyles: { fillColor: [231, 76, 60] },
+                columnStyles: { 2: { halign: 'right' } }
+            });
+
+            const totalCollected = pay.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+            doc.setFontSize(14);
+            doc.text(`Total Collected: Rs ${formatRupeesNoSymbol(totalCollected)}`, 14, doc.lastAutoTable.finalY + 10);
+            doc.save(`Maintenance_Report_${monthTitle.replace(/ /g, '_')}.pdf`);
+        }
+
+        document.getElementById('expense-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newExpense = {
+                date: document.getElementById('exp-date').value,
+                desc: document.getElementById('exp-desc').value.trim(),
+                category: document.getElementById('exp-category').value,
+                amount: document.getElementById('exp-amount').value,
+                photos: []
+            };
+            const files = document.getElementById('exp-photo').files;
+            if (files.length > 0) {
+                const photoPromises = Array.from(files).map(file => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = ev => resolve(ev.target.result);
+                    reader.readAsDataURL(file);
+                }));
+                newExpense.photos = await Promise.all(photoPromises);
+            }
+            expenses.push(newExpense);
+            await saveData();
+            e.target.reset();
+            alert("Expense added successfully!");
+        });
+
+        document.getElementById('payment-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const flat = document.getElementById('pay-flat').value;
+            const name = document.getElementById('pay-vacant').checked ? '' : document.getElementById('pay-name').value.trim();
+            const contact = document.getElementById('pay-contact').value.trim();
+            payments.push({
+                date: document.getElementById('pay-date').value,
+                flat: flat,
+                name: name,
+                contact: contact,
+                amount: document.getElementById('pay-amount').value
+            });
+            if (document.getElementById('pay-vacant').checked) flatStatus[flat] = 'vacant';
+            else if (name) flatStatus[flat] = 'occupied';
+            await saveData();
+            e.target.reset();
+            document.getElementById('pay-vacant').checked = false;
+            toggleVacant();
+            alert("Payment added successfully!");
+        });
+
+        function initApp() {
+            const savedLang = localStorage.getItem('preferredLanguage') || 'en';
+            document.getElementById('language-select').value = savedLang;
+            changeLanguage();
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.querySelector('.theme-toggle button').textContent = 'Light Mode';
+            }
+            populateMonthSelects();
+            updateDashboard();
+            renderLists();
+            renderReports();
+            openTab('dashboard');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+            const loginPage = document.getElementById('login-page');
+            const mainApp = document.getElementById('main-app');
+            const logoutBtn = document.getElementById('logout-btn');
+            if (isLoggedIn) {
+                loginPage.style.display = 'none';
+                mainApp.style.display = 'block';
+                logoutBtn.style.display = 'block';
+                loadData();
+            } else {
+                loginPage.style.display = 'flex';
+                mainApp.style.display = 'none';
+                logoutBtn.style.display = 'none';
+            }
+
+            document.getElementById('login-btn').addEventListener('click', () => {
+                const password = document.getElementById('login-password').value.trim();
+                if (password === APP_PASSWORD) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    loginPage.style.display = 'none';
+                    mainApp.style.display = 'block';
+                    logoutBtn.style.display = 'block';
+                    loadData();
+                } else {
+                    document.getElementById('login-error').style.display = 'block';
+                }
+            });
+
+            document.getElementById('login-password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') document.getElementById('login-btn').click();
+            });
+
+            logoutBtn.addEventListener('click', () => {
+                localStorage.removeItem('isLoggedIn');
+                loginPage.style.display = 'flex';
+                mainApp.style.display = 'none';
+                logoutBtn.style.display = 'none';
+            });
+        });
+
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('exp-date').value = today;
         document.getElementById('pay-date').value = today;
     </script>
 </body>
 </html>
-
-
